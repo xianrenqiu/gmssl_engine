@@ -1,0 +1,17 @@
+*.a
+*.so
+*.o
+la_test
+pke_test
+gmssl
+build
+.cache.mk
+.tmp_versions
+contig_mem
+*.o.cmd
+*.symvers
+*.order
+*.ko
+*.cmd.c
+*.mod.c
+*.ko.cmd
