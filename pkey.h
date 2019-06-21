@@ -1,12 +1,9 @@
 #ifndef __PKEY_H__
 #define __PKEY_H__
 
-#include <openssl/bn.h>
 #include <openssl/sm2.h>
 #include <openssl/engine.h>
-#include <openssl/ossl_typ.h>
 
-void gmssl_engine_create_pkey_pmeth(void);
 int gmssl_engine_pkey(ENGINE *e, EVP_PKEY_METHOD **pmeth, const int **nids, int nid);
 
 typedef int (*pkey_init_func)(EVP_PKEY_CTX *);
@@ -31,7 +28,6 @@ typedef void (*pkey_cleanup_func)(EVP_PKEY_CTX *);
 
 typedef struct pkey_info_
 {
-    int nid;
     EVP_PKEY_METHOD *pMethod;
 } pkey_info_t;
 

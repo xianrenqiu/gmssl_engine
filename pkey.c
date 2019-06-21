@@ -1,20 +1,8 @@
-#include <pthread.h>
-#include <string.h>
-#include <signal.h>
-
-#include "openssl/kdf.h"
-#include "openssl/evp.h"
-#include "openssl/ssl.h"
-#include "openssl/async.h"
-#include "openssl/ossl_typ.h"
-
 #include "pkey.h"
 #include "engine.h"
 
-pkey_info_t info[] = {
-    {EVP_PKEY_EC, NULL},
-    {EVP_PKEY_TLS1_PRF, NULL}
-};
+#define PKEY_NID_NUM 2
+pkey_info_t info[PKEY_NID_NUM];
 
 int pkey_nids[] = {
     EVP_PKEY_EC,
@@ -23,7 +11,6 @@ int pkey_nids[] = {
 
 int gmssl_engine_pkey_init(EVP_PKEY_CTX *ctx)
 {
-	DEBUG_FUNC_INFO();
 	pkey_init_func default_init;
 	EVP_PKEY_METHOD *pmeth = EVP_PKEY_meth_find(EVP_PKEY_EC);
 	EVP_PKEY_meth_get_init(pmeth, &default_init);
@@ -42,7 +29,6 @@ int gmssl_engine_pkey_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
 
 void gmssl_engine_pkey_cleanup(EVP_PKEY_CTX *ctx)
 {
-	DEBUG_FUNC_INFO();
 	pkey_cleanup_func default_cleanup;
 	EVP_PKEY_METHOD *pmeth = EVP_PKEY_meth_find(EVP_PKEY_EC);
 	EVP_PKEY_meth_get_cleanup(pmeth, &default_cleanup);
@@ -52,7 +38,6 @@ void gmssl_engine_pkey_cleanup(EVP_PKEY_CTX *ctx)
 
 int gmssl_engine_pkey_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 {
-	DEBUG_FUNC_INFO();
 	pkey_paramgen_init_func default_paramgen_init;
 	pkey_paramgen_func default_paramgen;
 
@@ -64,7 +49,6 @@ int gmssl_engine_pkey_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 
 int gmssl_engine_pkey_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 {
-	DEBUG_FUNC_INFO();
 	pkey_keygen_init_func default_keygen_init;
 	pkey_keygen_func default_keygen;
 
@@ -77,7 +61,6 @@ int gmssl_engine_pkey_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY *pkey)
 int gmssl_engine_pkey_sign(EVP_PKEY_CTX *ctx, uint8_t *sig, 
 					size_t *siglen, const uint8_t *tbs, size_t tbslen)
 {
-	DEBUG_FUNC_INFO();
 	pkey_sign_func default_sign;
 	pkey_sign_func_init default_sign_init;
 
@@ -92,7 +75,6 @@ int gmssl_engine_pkey_verify(EVP_PKEY_CTX *ctx,
 					   const uint8_t *sig, size_t siglen,
 					   const uint8_t *tbs, size_t tbslen)
 {
-	DEBUG_FUNC_INFO();
 	pkey_verify_func default_verify;
 	pkey_verify_init_func default_verify_init;
 
@@ -106,7 +88,6 @@ int gmssl_engine_pkey_verify(EVP_PKEY_CTX *ctx,
 int gmssl_engine_pkey_encrypt(EVP_PKEY_CTX *ctx, uint8_t *out, 
 						size_t *outlen, const uint8_t *in, size_t inlen)
 {
-	DEBUG_FUNC_INFO();
 	EC_KEY *ec_key = EVP_PKEY_get0_EC_KEY(EVP_PKEY_CTX_get0_pkey(ctx));
 
 	pkey_encrypt_func default_encrypt;
@@ -122,7 +103,6 @@ int gmssl_engine_pkey_encrypt(EVP_PKEY_CTX *ctx, uint8_t *out,
 int gmssl_engine_pkey_decrypt(EVP_PKEY_CTX *ctx, uint8_t *out, 
 					size_t *outlen, const uint8_t *in, size_t inlen)
 {
-	DEBUG_FUNC_INFO();
 	pkey_decrypt_func default_decrypt;
 	pkey_decrypt_init_func default_decrypt_init;
 
@@ -135,7 +115,6 @@ int gmssl_engine_pkey_decrypt(EVP_PKEY_CTX *ctx, uint8_t *out,
 
 int gmssl_engine_pkey_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
 {
-	DEBUG_FUNC_INFO();
 	pkey_ctrl_func default_ctrl;
 	pkey_ctrl_str_func default_ctrl_str;
 
@@ -147,7 +126,6 @@ int gmssl_engine_pkey_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
 
 int gmssl_engine_pkey_derive(EVP_PKEY_CTX *ctx, uint8_t *key, size_t *keylen)
 {
-	DEBUG_FUNC_INFO();
 	pkey_derive_func default_derive;
 	pkey_derive_init_func default_derive_init;
 
@@ -179,7 +157,6 @@ EVP_PKEY_METHOD *e_pkey_ec_pmeth(void)
 
 int gmssl_engine_pkey_tls1_prf_init(EVP_PKEY_CTX *ctx)
 {
-	DEBUG_FUNC_INFO();
 	pkey_init_func default_init;
 	EVP_PKEY_METHOD *pmeth = EVP_PKEY_meth_find(EVP_PKEY_TLS1_PRF);
 	EVP_PKEY_meth_get_init(pmeth, &default_init);
@@ -189,7 +166,6 @@ int gmssl_engine_pkey_tls1_prf_init(EVP_PKEY_CTX *ctx)
 
 int gmssl_engine_pkey_tls1_prf_derive(EVP_PKEY_CTX *ctx, uint8_t *key, size_t *keylen)
 {
-	DEBUG_FUNC_INFO();
 	pkey_derive_func default_derive;
 	pkey_derive_init_func default_derive_init;
 
@@ -201,7 +177,6 @@ int gmssl_engine_pkey_tls1_prf_derive(EVP_PKEY_CTX *ctx, uint8_t *key, size_t *k
 
 int gmssl_engine_pkey_tls1_prf_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
 {
-	DEBUG_FUNC_INFO();
 	pkey_ctrl_func default_ctrl;
 	pkey_ctrl_str_func default_ctrl_str;
 
@@ -213,7 +188,6 @@ int gmssl_engine_pkey_tls1_prf_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p
 
 void gmssl_engine_pkey_tls1_prf_cleanup(EVP_PKEY_CTX *ctx)
 {
-	DEBUG_FUNC_INFO();
 	pkey_cleanup_func default_cleanup;
 	EVP_PKEY_METHOD *pmeth = EVP_PKEY_meth_find(EVP_PKEY_TLS1_PRF);
 	EVP_PKEY_meth_get_cleanup(pmeth, &default_cleanup);

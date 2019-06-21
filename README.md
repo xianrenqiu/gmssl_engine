@@ -1,11 +1,13 @@
 ## gmssl engine
 
-
 > ! 如果出现找不到引擎的错误, 需要通过 `export OPENSSL_ENGINES=<gmssl_engine>/ext/gmssl/lib/engines-1.1/` 设置环境变量
 
-
-### 查看 gmssl_engine 所支持的算法
+### 编译与运行
 ```
+$ mkdir build && cd build
+$ cmake ..
+$ make install
+# 查看 gmssl_engine 所支持的算法
 $ ./ext/gmssl/bin/gmssl engine -t -c libgmssl_engine
 # 输出
 Bind gmssl_engine.

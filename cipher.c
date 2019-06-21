@@ -1,32 +1,15 @@
-#include <pthread.h>
-#include <string.h>
-#include <limits.h>
-#include <unistd.h>
-#include <signal.h>
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/epoll.h>
-#include <sys/eventfd.h>
-
-#include <openssl/bn.h>
-#include <openssl/ec.h>
-#include <openssl/err.h>
-#include <openssl/ecdh.h>
-#include <openssl/rand.h>
-#include <openssl/async.h>
-#include <openssl/obj_mac.h>
 
 #include "engine.h"
 #include "cipher.h"
 
 typedef struct cipher_ctx_ {
     int nid;
-    int ivsize;
     EVP_CIPHER *cipher;
-} cipher_ctx_t;
+} cipher_info_t;
 
-int ciphers_nids[] = 
+static int ciphers_nids[] = 
 {                             
     NID_aes_128_ecb,
     NID_aes_128_cbc,
@@ -44,27 +27,27 @@ int ciphers_nids[] =
     NID_sms4_ctr
 };
 
-static cipher_ctx_t cipher_table[] = {
+static cipher_info_t info[] = {
     // aes
-    {NID_aes_128_ecb, 0, NULL},
-    {NID_aes_128_cbc, 16, NULL},
-    {NID_aes_128_ctr, 16, NULL},
-    {NID_aes_192_ecb, 0, NULL},
-    {NID_aes_192_cbc, 16, NULL},
-    {NID_aes_192_ctr, 16, NULL},
-    {NID_aes_256_ecb, 0, NULL},
-    {NID_aes_256_cbc, 16, NULL},
-    {NID_aes_256_ctr, 16, NULL},
-    {NID_aes_128_gcm, 16, NULL},
-    {NID_aes_256_gcm, 16, NULL},
+    {NID_aes_128_ecb, NULL},
+    {NID_aes_128_cbc, NULL},
+    {NID_aes_128_ctr, NULL},
+    {NID_aes_192_ecb, NULL},
+    {NID_aes_192_cbc, NULL},
+    {NID_aes_192_ctr, NULL},
+    {NID_aes_256_ecb, NULL},
+    {NID_aes_256_cbc, NULL},
+    {NID_aes_256_ctr, NULL},
+    {NID_aes_128_gcm, NULL},
+    {NID_aes_256_gcm, NULL},
 
     // sm4
-    {NID_sms4_ecb, 0, NULL},
-    {NID_sms4_cbc, 16, NULL},
-    {NID_sms4_ctr, 16, NULL},
+    {NID_sms4_ecb, NULL},
+    {NID_sms4_cbc, NULL},
+    {NID_sms4_ctr, NULL},
 };
 
-static inline const EVP_CIPHER *gmssl_engine_cipher_sw_impl(int nid)
+static const EVP_CIPHER *gmssl_engine_cipher_sw_impl(int nid)
 {
     switch (nid) {
         case NID_aes_128_ecb:
@@ -104,35 +87,36 @@ static inline const EVP_CIPHER *gmssl_engine_cipher_sw_impl(int nid)
 #define GET_SW_CIPHER(ctx) \
             gmssl_engine_cipher_sw_impl(EVP_CIPHER_CTX_nid((ctx)))
 
+static int gmssl_engine_ciphers_do_cipher(EVP_CIPHER_CTX *ctx, uint8_t *out, const uint8_t *in, size_t len)
+{
+    return EVP_CIPHER_meth_get_do_cipher(GET_SW_CIPHER(ctx))(ctx, out, in, len);
+}
+
+static const EVP_CIPHER *gmssl_engine_get_cipher(int nid)
+{
+    for (int i = 0; i < sizeof(info)/sizeof(cipher_info_t); i++)
+        if (info[i].nid == nid)
+            return info[i].cipher;
+    
+    return NULL;
+}
+
 int gmssl_engine_create_ciphers(void)
 {
-    uint32_t i;
-    
-    for (i = 0; i < sizeof(cipher_table)/sizeof(cipher_ctx_t); i++)
+    for (int i = 0; i < sizeof(info)/sizeof(cipher_info_t); i++)
     {
-        EVP_CIPHER *temp = gmssl_engine_cipher_sw_impl(cipher_table[i].nid);
-        cipher_table[i].cipher = EVP_CIPHER_meth_dup(temp);
+        EVP_CIPHER *temp = gmssl_engine_cipher_sw_impl(info[i].nid);
+        info[i].cipher = EVP_CIPHER_meth_dup(temp);
 
-        if (!EVP_CIPHER_meth_set_do_cipher(cipher_table[i].cipher, gmssl_engine_ciphers_do_cipher))
-            goto cipher_error;
+        if (!EVP_CIPHER_meth_set_do_cipher(info[i].cipher, gmssl_engine_ciphers_do_cipher))
+        {
+            info[i].cipher = NULL;
+            EVP_CIPHER_meth_free(info[i].cipher);
+            return 0;
+        }
     }
     
     return 1;
-    
-cipher_error:
-    EVP_CIPHER_meth_free(cipher_table[i].cipher);
-    cipher_table[i].cipher = NULL;
-
-    return 0;
-}
-
-const EVP_CIPHER *gmssl_engine_get_cipher(int nid)
-{
-    for (int i = 0; i < sizeof(cipher_table)/sizeof(cipher_ctx_t); i++)
-        if (cipher_table[i].nid == nid)
-            return cipher_table[i].cipher;
-    
-    return NULL;
 }
 
 int gmssl_engine_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids, int nid)
@@ -146,11 +130,4 @@ int gmssl_engine_ciphers(ENGINE *e, const EVP_CIPHER **cipher, const int **nids,
     *cipher = gmssl_engine_get_cipher(nid);
 
     return (*cipher != NULL);
-}
-
-int gmssl_engine_ciphers_do_cipher(EVP_CIPHER_CTX *ctx, uint8_t *out, const uint8_t *in, size_t len)
-{
-    DEBUG_FUNC_INFO();
-
-    return EVP_CIPHER_meth_get_do_cipher(GET_SW_CIPHER(ctx))(ctx, out, in, len);
 }
